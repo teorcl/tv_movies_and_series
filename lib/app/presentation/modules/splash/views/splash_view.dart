@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../main.dart';
+import '../../../../domain/models/user.dart';
+import '../../../routes/routes.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -23,15 +25,43 @@ class _SplashViewState extends State<SplashView> {
   }
 
   Future<void> _init() async {
-    final connectivityRepository = Injector.of(context).connectivityRepository;
+    final injector = Injector.of(context);
+    final connectivityRepository = injector.connectivityRepository;
     final hasInternetConnection =
         await connectivityRepository.hasInternetConnection;
 
     if (hasInternetConnection) {
       // Comprobamos si existe una sesión activa
       debugPrint('✅✅✅✅✅ Tiene conexión a internet? $hasInternetConnection');
+      final authenticationRepository = injector.authenticationRepository;
+      final isSignedIn = await authenticationRepository.isSignedIn;
+      if (isSignedIn) {
+        final userData = await authenticationRepository.getUserData();
+        if (mounted) {
+          _redirectUser(userData);
+        }
+      } else if (mounted) {
+        _goTo(routeName: Routes.signIn);
+      }
     } else {
       // Mostrar la vista de offline
+    }
+  }
+
+  void _goTo({
+    required String routeName,
+  }) {
+    Navigator.pushReplacementNamed(
+      context,
+      routeName,
+    );
+  }
+
+  void _redirectUser(User? userData) {
+    if (userData != null) {
+      _goTo(routeName: Routes.home);
+    } else {
+      _goTo(routeName: Routes.signIn);
     }
   }
 
