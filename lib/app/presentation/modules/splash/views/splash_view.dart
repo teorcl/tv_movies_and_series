@@ -45,6 +45,8 @@ class _SplashViewState extends State<SplashView> {
       }
     } else {
       // Mostrar la vista de offline
+      debugPrint('❌❌❌❌❌ No tiene conexión a internet? $hasInternetConnection');
+      _goTo(routeName: Routes.offline);
     }
   }
 
