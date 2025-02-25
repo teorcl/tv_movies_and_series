@@ -50,14 +50,14 @@ class _SignInViewState extends State<SignInView> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     onChanged: (text) {
                       setState(() {
-                        _password = text.replaceAll(' ', '').toLowerCase();
+                        _password = text.replaceAll(' ', '');
                       });
                     },
                     decoration: const InputDecoration(
                       hintText: 'Password',
                     ),
                     validator: (text) {
-                      text = text?.replaceAll(' ', '').toLowerCase() ?? '';
+                      text = text?.replaceAll(' ', '') ?? '';
                       if (text.length < 4) {
                         return 'Password is required';
                       }
@@ -112,6 +112,7 @@ class _SignInViewState extends State<SignInView> {
           SignInFailure.notFound: 'Not found',
           SignInFailure.unauthorized: 'Invalid Password',
           SignInFailure.unknown: 'Error',
+          SignInFailure.network: 'Network error',
         }[failure];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

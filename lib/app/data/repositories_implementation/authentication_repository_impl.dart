@@ -4,14 +4,17 @@ import '../../domain/either.dart';
 import '../../domain/enums.dart';
 import '../../domain/models/user.dart';
 import '../../domain/repositories/authentication_repository.dart';
+import '../services/remote/authentication_api.dart';
 
 const _key = 'sessionId';
 
 class AuthenticationRepositoryImpl implements AuthenticationRepository {
   final FlutterSecureStorage _secureStorage;
+  final AuthenticationApi _authenticationApi;
 
   AuthenticationRepositoryImpl(
     this._secureStorage,
+    this._authenticationApi,
   );
 
   @override
@@ -32,18 +35,40 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
     String username,
     String password,
   ) async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (username != 'test') {
-      return Either.left(SignInFailure.notFound);
-    }
-    if (password != '123456') {
-      return Either.left(SignInFailure.unauthorized);
+    final requestToken = await _authenticationApi.createRequestToken();
+
+    if (requestToken == null) {
+      return Either.left(SignInFailure.unknown);
     }
 
-    //Aqui se guarda la sesión del usuario en el dispositivo
-    await _secureStorage.write(key: _key, value: 'sessionId');
+    final loginResult = await _authenticationApi.createSessionWithLogin(
+      username: username,
+      password: password,
+      requestToken: requestToken,
+    );
 
-    return Either.right(User());
+    return loginResult.when(
+      (failure) async {
+        return Either.left(failure);
+      },
+      (newRequestToken) async {
+        final sessionResult = await _authenticationApi.createSession(
+          requestToken: newRequestToken,
+        );
+        return sessionResult.when(
+          (failure) async {
+            return Either.left(failure);
+          },
+          (sessionId) async {
+            await _secureStorage.write(
+              key: _key,
+              value: sessionId,
+            );
+            return Either.right(User());
+          },
+        );
+      },
+    );
   }
 
   @override

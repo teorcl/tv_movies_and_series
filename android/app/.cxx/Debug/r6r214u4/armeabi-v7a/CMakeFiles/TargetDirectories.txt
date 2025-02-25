@@ -1,0 +1,2 @@
+/Users/teo/Desktop/proyectos/tv_movies_and_series/android/app/.cxx/Debug/r6r214u4/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/teo/Desktop/proyectos/tv_movies_and_series/android/app/.cxx/Debug/r6r214u4/armeabi-v7a/CMakeFiles/rebuild_cache.dir
