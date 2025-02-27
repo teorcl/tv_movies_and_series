@@ -1,41 +1,32 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart';
 
 import '../../../domain/either.dart';
 import '../../../domain/enums.dart';
+import '../../http/http.dart';
 
 class AuthenticationApi {
-  final Client _client;
-  final _baseUrl = 'https://api.themoviedb.org/3';
-  final _apikey = '9bbf7db647d6cd1cd3ab5cc8ec23c9c1';
+  final Http _http;
 
-  AuthenticationApi(this._client);
+  AuthenticationApi(this._http);
 
-  Future<String?> createRequestToken() async {
-    try {
-      final response = await _client.get(
-        Uri.parse(
-          '$_baseUrl/authentication/token/new?api_key=$_apikey',
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final json = Map<String, dynamic>.from(
-          jsonDecode(
-            response.body,
-          ),
-        );
-
-        return json['request_token'];
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌❌❌ Error: $e');
-      return null;
-    }
+  Future<Either<SignInFailure, String>> createRequestToken() async {
+    final result = await _http.request('/authentication/token/new');
+    return result.when(
+      (failure) {
+        debugPrint('❌❌❌ Error: $failure');
+        if (failure.exception is NetworkException) {
+          return Either.left(SignInFailure.network);
+        }
+        return Either.left(SignInFailure.unknown);
+      },
+      (responseBody) {
+        final json = jsonDecode(responseBody);
+        final requestToken = json['request_token'] as String;
+        return Either.right(requestToken);
+      },
+    );
   }
 
   Future<Either<SignInFailure, String>> createSessionWithLogin({
@@ -43,83 +34,104 @@ class AuthenticationApi {
     required String password,
     required String requestToken,
   }) async {
-    try {
-      final response = await _client.post(
-        Uri.parse(
-          '$_baseUrl/authentication/token/validate_with_login?api_key=$_apikey',
-        ),
-        body: jsonEncode(
-          {
-            'username': username,
-            'password': password,
-            'request_token': requestToken,
-          },
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+    final result = await _http.request(
+      '/authentication/token/validate_with_login',
+      method: HttpMethod.post,
+      body: {
+        'username': username,
+        'password': password,
+        'request_token': requestToken,
+      },
+    );
 
-      switch (response.statusCode) {
-        case 200:
-          final json = Map<String, dynamic>.from(
-            jsonDecode(
-              response.body,
-            ),
-          );
+    return result.when(
+      (failure) {
+        debugPrint('❌❌❌ Error: $failure');
 
-          return Either.right(json['request_token']);
-        case 401:
-          return Either.left(SignInFailure.unauthorized);
-        case 404:
-          return Either.left(SignInFailure.notFound);
-        default:
-          return Either.left(SignInFailure.unknown);
-      }
-    } catch (e) {
-      debugPrint('❌❌❌ Error: $e');
-      if (e is SocketException) {
-        return Either.left(SignInFailure.network);
-      }
-      return Either.left(SignInFailure.unknown);
-    }
+        if (failure.statusCode != null) {
+          switch (failure.statusCode) {
+            case 401:
+              return Either.left(SignInFailure.unauthorized);
+            case 404:
+              return Either.left(SignInFailure.notFound);
+            default:
+              return Either.left(SignInFailure.unknown);
+          }
+        }
+
+        if (failure.exception is NetworkException) {
+          return Either.left(SignInFailure.network);
+        }
+        return Either.left(SignInFailure.unknown);
+      },
+      (responseBody) {
+        final json = Map<String, dynamic>.from(
+          jsonDecode(
+            responseBody,
+          ),
+        );
+
+        final newRequestToken = json['request_token'] as String;
+
+        return Either.right(newRequestToken);
+      },
+    );
+
+    //   switch (response.statusCode) {
+    //     case 200:
+    //       final json = Map<String, dynamic>.from(
+    //         jsonDecode(
+    //           response.body,
+    //         ),
+    //       );
+
+    //       return Either.right(json['request_token']);
+    //     case 401:
+    //       return Either.left(SignInFailure.unauthorized);
+    //     case 404:
+    //       return Either.left(SignInFailure.notFound);
+    //     default:
+    //       return Either.left(SignInFailure.unknown);
+    //   }
+    // } catch (e) {
+    //   debugPrint('❌❌❌ Error: $e');
+    //   if (e is SocketException) {
+    //     return Either.left(SignInFailure.network);
+    //   }
+    //   return Either.left(SignInFailure.unknown);
+    // }
   }
 
   Future<Either<SignInFailure, String>> createSession({
     required String requestToken,
   }) async {
-    try {
-      final response = await _client.post(
-        Uri.parse(
-          '$_baseUrl/authentication/session/new?api_key=$_apikey',
-        ),
-        body: jsonEncode(
-          {
-            'request_token': requestToken,
-          },
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+    final result = await _http.request(
+      '/authentication/session/new',
+      method: HttpMethod.post,
+      body: {
+        'request_token': requestToken,
+      },
+    );
 
-      if (response.statusCode == 200) {
+    return result.when(
+      (failure) {
+        debugPrint('❌❌❌ Error: $failure');
+        if (failure.exception is NetworkException) {
+          return Either.left(SignInFailure.network);
+        }
+        return Either.left(SignInFailure.unknown);
+      },
+      (responseBody) {
         final json = Map<String, dynamic>.from(
           jsonDecode(
-            response.body,
+            responseBody,
           ),
         );
 
         final sessionId = json['session_id'] as String;
+
         return Either.right(sessionId);
-      }
-      return Either.left(SignInFailure.unknown);
-    } catch (e) {
-      debugPrint('❌❌❌ Error: $e');
-      if (e is SocketException) {
-        return Either.left(SignInFailure.network);
-      }
-      return Either.left(SignInFailure.unknown);
-    }
+      },
+    );
   }
 }
