@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
 import '../../domain/either.dart';
@@ -19,14 +21,17 @@ class Http {
         _baseUrl = baseUrl,
         _apikey = apikey;
 
-  Future<Either<HttpFailure, String>> request(
+  Future<Either<HttpFailure, R>> request<R>(
     String path, {
+    required R Function(String responseBody) onSuccess,
     HttpMethod method = HttpMethod.get,
     Map<String, String> headers = const {},
     Map<String, dynamic> queryParameters = const {},
     Map<String, dynamic> body = const {},
     bool useApiKey = true,
   }) async {
+    Map<String, dynamic> logs = {};
+    StackTrace? stackTrace;
     try {
       if (useApiKey) {
         queryParameters = {
@@ -46,6 +51,12 @@ class Http {
       };
       late final Response response;
       final bodyString = jsonEncode(body);
+      logs = {
+        'startTime': DateTime.now().toIso8601String(),
+        'url': url.toString(),
+        'method': method.name,
+        'body': body,
+      };
       switch (method) {
         case HttpMethod.get:
           response = await _client.get(
@@ -77,27 +88,60 @@ class Http {
           );
       }
       final statusCode = response.statusCode;
+
+      logs = {
+        ...logs,
+        'statusCode': statusCode,
+        'responseBody': response.body,
+      };
+
       if (statusCode >= 200 && statusCode < 300) {
-        return Either.right(response.body);
+        return Either.right(onSuccess(response.body));
       }
       return Either.left(
         HttpFailure(
           statusCode: statusCode,
         ),
       );
-    } catch (e) {
+    } catch (e, s) {
+      stackTrace = s;
+      logs = {
+        ...logs,
+        'exception': e.runtimeType,
+      };
+
       if (e is SocketException || e is ClientException) {
+        logs = {
+          ...logs,
+          'exception': 'NetworkException',
+        };
         return Either.left(
           HttpFailure(
             exception: NetworkException(),
           ),
         );
       }
+
       return Either.left(
         HttpFailure(
           exception: e,
         ),
       );
+    } finally {
+      logs = {
+        ...logs,
+        'endTime': DateTime.now().toIso8601String(),
+      };
+      if (kDebugMode) {
+        log(
+          '''
+          --------------------------------------------
+          ${const JsonEncoder.withIndent('  ').convert(logs)}
+          --------------------------------------------
+          ''',
+          stackTrace: stackTrace,
+        );
+      }
     }
   }
 }
