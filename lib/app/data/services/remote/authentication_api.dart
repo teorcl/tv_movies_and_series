@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 
 import '../../../domain/either.dart';
@@ -35,11 +33,7 @@ class AuthenticationApi {
     final result = await _http.request(
       '/authentication/token/new',
       onSuccess: (responseBody) {
-        final json = Map<String, dynamic>.from(
-          jsonDecode(
-            responseBody,
-          ),
-        );
+        final json = responseBody as Map;
 
         final requestToken = json['request_token'] as String;
 
@@ -62,11 +56,7 @@ class AuthenticationApi {
     final result = await _http.request(
       '/authentication/token/validate_with_login',
       onSuccess: (responseBody) {
-        final json = Map<String, dynamic>.from(
-          jsonDecode(
-            responseBody,
-          ),
-        );
+        final json = responseBody as Map;
 
         final newRequestToken = json['request_token'] as String;
 
@@ -98,11 +88,7 @@ class AuthenticationApi {
         'request_token': requestToken,
       },
       onSuccess: (responseBody) {
-        final json = Map<String, dynamic>.from(
-          jsonDecode(
-            responseBody,
-          ),
-        );
+        final json = responseBody as Map;
 
         final sessionId = json['session_id'] as String;
 
