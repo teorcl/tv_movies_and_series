@@ -14,7 +14,7 @@ class SubmitButton extends StatelessWidget {
     final signInController = Provider.of<SignInController>(context);
     //La linea anterior funcionara siempre que SubmitButton sea hijo de un widget que tenga un ChangeNotifierProvider<SignInController> como ancestro
 
-    if (signInController.fetching) {
+    if (signInController.state.fetching) {
       return const CircularProgressIndicator();
     } else {
       return MaterialButton(
@@ -40,8 +40,8 @@ class SubmitButton extends StatelessWidget {
     final result =
         await Provider.of<AuthenticationRepository>(context, listen: false)
             .signIn(
-      signInController.username,
-      signInController.password,
+      signInController.state.userName,
+      signInController.state.password,
     );
 
     if (!signInController.mounted) return;

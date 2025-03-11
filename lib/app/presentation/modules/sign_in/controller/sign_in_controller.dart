@@ -1,28 +1,29 @@
 import 'package:flutter/foundation.dart';
 
+import 'sign_in_state.dart';
+
 /// Esta clase representa a lo que yo suelo llamar el provider (gestoinador de estado)
 
 class SignInController extends ChangeNotifier {
-  String _userName = '';
-  String _password = '';
-  bool _fecthing = false;
+  SignInState _state = SignInState();
+
   bool _mounted = true;
 
-  String get username => _userName;
-  String get password => _password;
-  bool get fetching => _fecthing;
+  SignInState get state => _state;
   bool get mounted => _mounted;
 
   void onUserNameChanged(String text) {
-    _userName = text.trim().toLowerCase();
+    _state = _state.copyWith(userName: text.trim().toLowerCase());
   }
 
   void onPasswordChanged(String text) {
-    _password = text.replaceAll(' ', '');
+    _state = _state.copyWith(
+      password: text.replaceAll(' ', ''),
+    );
   }
 
   void onFetchingChanged(bool value) {
-    _fecthing = value;
+    _state = _state.copyWith(fetching: value);
     notifyListeners();
   }
 
