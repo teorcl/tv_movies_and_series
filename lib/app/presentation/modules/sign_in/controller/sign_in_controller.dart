@@ -1,36 +1,48 @@
-import 'package:flutter/foundation.dart';
-
+import '../../../../domain/either.dart';
+import '../../../../domain/enums.dart';
+import '../../../../domain/models/user.dart';
+import '../../../../domain/repositories/authentication_repository.dart';
+import '../../../global/state_notifier.dart';
 import 'sign_in_state.dart';
 
 /// Esta clase representa a lo que yo suelo llamar el provider (gestoinador de estado)
 
-class SignInController extends ChangeNotifier {
-  SignInState _state = SignInState();
+class SignInController extends StateNotifier<SignInState> {
+  SignInController(
+    super.state, {
+    required this.authenticationRepository,
+  });
 
-  bool _mounted = true;
-
-  SignInState get state => _state;
-  bool get mounted => _mounted;
+  final AuthenticationRepository authenticationRepository;
 
   void onUserNameChanged(String text) {
-    _state = _state.copyWith(userName: text.trim().toLowerCase());
-  }
-
-  void onPasswordChanged(String text) {
-    _state = _state.copyWith(
-      password: text.replaceAll(' ', ''),
+    onlyUpdate(
+      state.copyWith(
+        userName: text.trim().toLowerCase(),
+      ),
     );
   }
 
-  void onFetchingChanged(bool value) {
-    _state = _state.copyWith(fetching: value);
-    notifyListeners();
+  void onPasswordChanged(String text) {
+    onlyUpdate(
+      state.copyWith(
+        password: text.replaceAll(' ', ''),
+      ),
+    );
   }
 
-  @override
-  void dispose() {
-    print('Dispose SignInController');
-    _mounted = false;
-    super.dispose();
+  Future<Either<SignInFailure, User>> submit() async {
+    state = state.copyWith(fetching: true);
+    final result = await authenticationRepository.signIn(
+      state.userName,
+      state.password,
+    );
+
+    result.when(
+      (_) => state = state.copyWith(fetching: false),
+      (_) => null,
+    );
+
+    return result;
   }
 }
