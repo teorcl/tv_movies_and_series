@@ -5,7 +5,6 @@ abstract class StateNotifier<State> extends ChangeNotifier {
   bool _mounted = true;
 
   StateNotifier(this._state) : _oldState = _state;
-  //StateNotifier(State state) : _state = state; esto es lo mismo que la linea de arriba
 
   State get state => _state;
   State get oldState => _oldState;

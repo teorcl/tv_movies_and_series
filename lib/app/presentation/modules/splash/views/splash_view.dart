@@ -5,6 +5,7 @@ import '../../../../domain/models/user.dart';
 import '../../../../domain/repositories/account_repository.dart';
 import '../../../../domain/repositories/authentication_repository.dart';
 import '../../../../domain/repositories/connectivity_repository.dart';
+import '../../../global/controllers/session_controller.dart';
 import '../../../routes/routes.dart';
 
 class SplashView extends StatefulWidget {
@@ -36,24 +37,25 @@ class _SplashViewState extends State<SplashView> {
     final accountRepository = context.read<AccountRepository>();
     final hasInternetConnection =
         await connectivityRepository.hasInternetConnection;
+    final SessionController sessionController = context.read();
 
-    if (hasInternetConnection) {
-      // Comprobamos si existe una sesión activa
-      debugPrint('✅✅✅✅✅ Tiene conexión a internet? $hasInternetConnection');
-      final isSignedIn = await authenticationRepository.isSignedIn;
-      if (isSignedIn) {
-        final userData = await accountRepository.getUserData();
-        if (mounted) {
-          _redirectUser(userData);
-        }
-      } else if (mounted) {
-        _goTo(routeName: Routes.signIn);
-      }
-    } else {
+    if (!hasInternetConnection) {
       // Mostrar la vista de offline
       debugPrint('❌❌❌❌❌ No tiene conexión a internet? $hasInternetConnection');
-      _goTo(routeName: Routes.offline);
+      return _goTo(routeName: Routes.offline);
     }
+
+    final isSignedIn = await authenticationRepository.isSignedIn;
+    if (!isSignedIn) return _goTo(routeName: Routes.signIn);
+
+    final userData = await accountRepository.getUserData();
+
+    if (userData != null) {
+      sessionController.setUser(userData);
+      return _goTo(routeName: Routes.home);
+    }
+
+    return _goTo(routeName: Routes.signIn);
   }
 
   void _goTo({
@@ -66,6 +68,7 @@ class _SplashViewState extends State<SplashView> {
   }
 
   void _redirectUser(User? userData) {
+    //*? Esta condición se debe entender como si logramos obtener los datos del usuario
     if (userData != null) {
       _goTo(routeName: Routes.home);
     } else {
