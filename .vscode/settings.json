@@ -2,5 +2,10 @@
     "editor.codeActionsOnSave": [
         "source.organizeImports",
         "source.fixAll"
-    ]
+    ],
+    "command-runner.commands": {
+        "pub get":"flutter pub get",
+        "pub upgrade":"flutter pub upgrade",
+        "build_runner":"flutter pub run build_runner build",    
+    }
 }

@@ -16,10 +16,7 @@ class AccountApi {
       },
       onSuccess: (json) {
         //return User.fromJson(json); // Esto si fromJson es un factory de User
-        return User(
-          id: json['id'],
-          username: json['username'],
-        );
+        return User.fromJson(json);
       },
     );
 
