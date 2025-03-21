@@ -1,9 +1,9 @@
 import '../../../../domain/either.dart';
 import '../../../../domain/enums.dart';
-import '../../../../domain/models/user.dart';
+import '../../../../domain/models/user/user.dart';
 import '../../../../domain/repositories/authentication_repository.dart';
 import '../../../global/state_notifier.dart';
-import 'sign_in_state.dart';
+import 'state/sign_in_state.dart';
 
 /// Esta clase representa a lo que yo suelo llamar el provider (gestoinador de estado)
 
